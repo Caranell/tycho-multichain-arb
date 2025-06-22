@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct TokenConfig {
     pub symbol: String,
     pub address: String,
-    pub decimals: u64,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

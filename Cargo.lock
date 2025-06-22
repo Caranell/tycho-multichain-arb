@@ -4396,10 +4396,12 @@ name = "multiarb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "num-bigint",
  "serde",
  "serde_json",
  "serde_yaml",
  "tokio",
+ "tracing",
  "tracing-subscriber 0.3.19",
  "tycho-client",
  "tycho-common",

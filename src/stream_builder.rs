@@ -23,14 +23,17 @@ pub async fn create_protocol_stream_builder(
     network: Network,
     chain: Chain,
     tvl_filter: ComponentFilter,
-    apikey: String,
+    api_key: String,
     tokens: HashMap<Bytes, Token>,
 ) -> ProtocolStreamBuilder {
+    tracing::info!(
+        "Creating protocol stream builder for network {}",
+        network.name
+    );
+
     let mut builder = ProtocolStreamBuilder::new(network.tycho_url.as_str(), chain);
-
     builder = add_exchanges(builder, &chain, tvl_filter);
-
-    builder = setup_stream_builder(builder, apikey, tokens).await;
+    builder = setup_stream_builder(builder, api_key, tokens).await;
 
     builder
 }
@@ -105,11 +108,11 @@ pub fn add_exchanges(
 
 pub async fn setup_stream_builder(
     mut builder: ProtocolStreamBuilder,
-    apikey: String,
+    api_key: String,
     tokens: HashMap<Bytes, Token>,
 ) -> ProtocolStreamBuilder {
     builder = builder
-        .auth_key(Some(apikey.clone()))
+        .auth_key(Some(api_key.clone()))
         .skip_state_decode_failures(true)
         .set_tokens(tokens.clone())
         .await;

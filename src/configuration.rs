@@ -51,10 +51,6 @@ fn validate_config(config: &Config) -> Result<(), String> {
                 return Err(format!("Address is required for token: {}", token.symbol).into());
             }
 
-            if token.decimals == 0 {
-                return Err(format!("Decimals is required for token: {}", token.symbol).into());
-            }
-
             token_locations
                 .entry(token.symbol.clone())
                 .or_insert(HashSet::new())
