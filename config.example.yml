@@ -1,0 +1,37 @@
+private_key: "0x0000000000000000000000000000000000000000000000000000000000000000"
+risk_param: 5
+chains:
+  - name: ethereum
+    tokens:
+      - symbol: USDC
+        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        decimals: 6
+      - symbol: WETH
+        address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+        decimals: 18
+        common_id: "weth"
+      - symbol: USDT
+        address: "0xdac17f958d2ee523a2206206994597c13d831ec7"
+        decimals: 6
+  - name: base
+    tokens:
+      - symbol: USDC
+        address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+        decimals: 6
+      - symbol: WETH
+        address: "0x4200000000000000000000000000000000000006"
+        decimals: 18
+      - symbol: USDT
+        address: "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2"
+        decimals: 6
+  - name: unichain
+    tokens:
+      - symbol: USDC
+        address: "0x078d782b760474a361dda0af3839290b0ef57ad6"
+        decimals: 6
+      - symbol: WETH
+        address: "0x4200000000000000000000000000000000000006"
+        decimals: 18
+      - symbol: USDT
+        address: "0x588ce4f028d8e7b53b687865d6a67b3a54c75518"
+        decimals: 6

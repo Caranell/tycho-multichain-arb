@@ -1,0 +1,118 @@
+use tycho_client::feed::component_tracker::ComponentFilter;
+use tycho_simulation::evm::{
+    engine_db::tycho_db::PreCachedDB,
+    protocol::{
+        ekubo::state::EkuboState,
+        filters::{balancer_pool_filter, curve_pool_filter, uniswap_v4_pool_with_hook_filter},
+        uniswap_v2::state::UniswapV2State,
+        uniswap_v3::state::UniswapV3State,
+        uniswap_v4::state::UniswapV4State,
+        vm::state::EVMPoolState,
+    },
+    stream::ProtocolStreamBuilder,
+    tycho_models::Chain,
+};
+
+use std::collections::HashMap;
+use tycho_simulation::models::Token;
+use tycho_simulation::tycho_core::Bytes;
+
+use crate::types::{Network, Protocol};
+
+pub async fn create_protocol_stream_builder(
+    network: Network,
+    chain: Chain,
+    tvl_filter: ComponentFilter,
+    apikey: String,
+    tokens: HashMap<Bytes, Token>,
+) -> ProtocolStreamBuilder {
+    let mut builder = ProtocolStreamBuilder::new(network.tycho_url.as_str(), chain);
+
+    builder = add_exchanges(builder, &chain, tvl_filter);
+
+    builder = setup_stream_builder(builder, apikey, tokens).await;
+
+    builder
+}
+
+pub fn add_exchanges(
+    mut builder: ProtocolStreamBuilder,
+    chain: &Chain,
+    tvl_filter: ComponentFilter,
+) -> ProtocolStreamBuilder {
+    match chain {
+        Chain::Ethereum => {
+            builder = builder
+                .exchange::<UniswapV2State>(Protocol::UniswapV2.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV3State>(Protocol::UniswapV3.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV4State>(
+                    Protocol::UniswapV4.to_str(),
+                    tvl_filter.clone(),
+                    Some(uniswap_v4_pool_with_hook_filter),
+                )
+                .exchange::<EkuboState>(Protocol::EkuboV2.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV2State>(
+                    Protocol::SushiswapV2.to_str(),
+                    tvl_filter.clone(),
+                    None,
+                )
+                .exchange::<UniswapV2State>(
+                    Protocol::PancakeswapV2.to_str(),
+                    tvl_filter.clone(),
+                    None,
+                )
+                .exchange::<UniswapV3State>(
+                    Protocol::PancakeswapV3.to_str(),
+                    tvl_filter.clone(),
+                    None,
+                )
+                .exchange::<EVMPoolState<PreCachedDB>>(
+                    Protocol::VmBalancerV2.to_str(),
+                    tvl_filter.clone(),
+                    Some(balancer_pool_filter),
+                )
+                .exchange::<EVMPoolState<PreCachedDB>>(
+                    Protocol::VmCurve.to_str(),
+                    tvl_filter.clone(),
+                    Some(curve_pool_filter),
+                )
+        }
+        Chain::Base => {
+            builder = builder
+                .exchange::<UniswapV2State>(Protocol::UniswapV2.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV3State>(Protocol::UniswapV3.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV4State>(
+                    Protocol::UniswapV4.to_str(),
+                    tvl_filter.clone(),
+                    Some(uniswap_v4_pool_with_hook_filter),
+                );
+        }
+        Chain::Unichain => {
+            builder = builder
+                .exchange::<UniswapV2State>(Protocol::UniswapV2.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV3State>(Protocol::UniswapV3.to_str(), tvl_filter.clone(), None)
+                .exchange::<UniswapV4State>(
+                    Protocol::UniswapV4.to_str(),
+                    tvl_filter.clone(),
+                    Some(uniswap_v4_pool_with_hook_filter),
+                );
+        }
+        _ => {}
+    };
+
+    builder
+}
+
+pub async fn setup_stream_builder(
+    mut builder: ProtocolStreamBuilder,
+    apikey: String,
+    tokens: HashMap<Bytes, Token>,
+) -> ProtocolStreamBuilder {
+    builder = builder
+        .auth_key(Some(apikey.clone()))
+        .skip_state_decode_failures(true)
+        .set_tokens(tokens.clone())
+        .await;
+
+    builder
+}
