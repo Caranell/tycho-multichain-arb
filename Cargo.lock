@@ -4396,6 +4396,7 @@ name = "multiarb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "futures 0.3.31",
  "num-bigint",
  "serde",
  "serde_json",

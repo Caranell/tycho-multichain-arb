@@ -4,14 +4,16 @@ mod tycho_api;
 mod types;
 mod utils;
 
-use configuration::load_config;
 use std::process;
 use std::str::FromStr;
-use stream_builder::create_protocol_stream_builder;
+use futures::future::select_all;
+use futures::StreamExt;
 use tycho_api::get_tokens;
 use tycho_common::models::Chain;
 use tycho_simulation::tycho_client::feed::component_tracker::ComponentFilter;
 
+use configuration::load_config;
+use stream_builder::create_protocol_stream_builder;
 use utils::constants::{TVL_LOWER_BOUND, TVL_UPPER_BOUND, TYCHO_API_KEY, network};
 
 #[tokio::main]
@@ -50,11 +52,35 @@ async fn main() {
 
         stream_builders.push(stream_builder);
     }
-}
 
-// pub async fn handle_stream(stream_builder: ProtocolStreamBuilder) {
-//     let stream = stream_builder.build().await.unwrap();
-// }
+    let mut tasks = vec![];
+
+    for stream_builder in stream_builders {
+        let task = tokio::spawn(async move {
+            let mut stream = stream_builder
+                .build()
+                .await
+                .expect("Failed building protocol stream");
+
+            while let Some(message_result) = stream.next().await {
+                let message = match message_result {
+                    Ok(msg) => {
+                        tracing::info!("Received message: {:?}", msg);
+                        msg
+                    }
+                    Err(e) => {
+                        eprintln!("Error receiving message: {e:?}. Continuing to next message...");
+                        continue;
+                    }
+                };
+            }
+        });
+
+        tasks.push(task);
+    }
+
+    let _ = select_all(tasks).await;
+}
 
 pub fn setup_tracing() {
     let filter =
