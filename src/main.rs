@@ -4,10 +4,10 @@ mod tycho_api;
 mod types;
 mod utils;
 
+use futures::StreamExt;
+use futures::future::select_all;
 use std::process;
 use std::str::FromStr;
-use futures::future::select_all;
-use futures::StreamExt;
 use tycho_api::get_tokens;
 use tycho_common::models::Chain;
 use tycho_simulation::tycho_client::feed::component_tracker::ComponentFilter;
@@ -35,7 +35,7 @@ async fn main() {
     let tvl_filter = ComponentFilter::with_tvl_range(TVL_LOWER_BOUND, TVL_UPPER_BOUND);
 
     for chain_config in config.chains {
-        println!("Processing chain: {}", chain_config.name);
+        tracing::info!("Processing chain: {}", chain_config.name);
 
         let chain = Chain::from_str(&chain_config.name).unwrap();
         let network = network(chain_config.name.clone()).unwrap().clone();
@@ -69,7 +69,9 @@ async fn main() {
                         msg
                     }
                     Err(e) => {
-                        eprintln!("Error receiving message: {e:?}. Continuing to next message...");
+                        tracing::error!(
+                            "Error receiving message: {e:?}. Continuing to next message..."
+                        );
                         continue;
                     }
                 };
