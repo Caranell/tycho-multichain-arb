@@ -1,19 +1,23 @@
+mod arbitrage_graph;
 mod configuration;
 mod stream_builder;
 mod tycho_api;
 mod types;
 mod utils;
 
+use configuration::load_config;
 use futures::StreamExt;
 use futures::future::select_all;
+use std::collections::HashMap;
 use std::process;
 use std::str::FromStr;
+use std::sync::Arc;
+use stream_builder::create_protocol_stream_builder;
+use tokio::sync::Mutex;
 use tycho_api::get_tokens;
 use tycho_common::models::Chain;
 use tycho_simulation::tycho_client::feed::component_tracker::ComponentFilter;
-
-use configuration::load_config;
-use stream_builder::create_protocol_stream_builder;
+use types::ArbitrageGraph;
 use utils::constants::{TVL_LOWER_BOUND, TVL_UPPER_BOUND, TYCHO_API_KEY, network};
 
 #[tokio::main]
@@ -33,40 +37,55 @@ async fn main() {
 
     let mut stream_builders = vec![];
     let tvl_filter = ComponentFilter::with_tvl_range(TVL_LOWER_BOUND, TVL_UPPER_BOUND);
+    let mut chain_tokens = HashMap::new();
 
     for chain_config in config.chains {
         tracing::info!("Processing chain: {}", chain_config.name);
 
         let chain = Chain::from_str(&chain_config.name).unwrap();
         let network = network(chain_config.name.clone()).unwrap().clone();
-        let tokens = get_tokens(&network, TYCHO_API_KEY.to_string(), chain_config.tokens).await;
+        let tokens = get_tokens(&network, TYCHO_API_KEY.to_string(), chain_config.tokens)
+            .await
+            .unwrap();
+
+        chain_tokens.insert(chain, tokens.clone());
 
         let stream_builder = create_protocol_stream_builder(
             network,
             chain,
             tvl_filter.clone(),
             TYCHO_API_KEY.to_string(),
-            tokens.unwrap(),
+            tokens,
         )
         .await;
 
-        stream_builders.push(stream_builder);
+        stream_builders.push((stream_builder, chain));
+    }
+
+    let arbitrage_graph = Arc::new(Mutex::new(ArbitrageGraph::new()));
+    {
+        let mut graph = arbitrage_graph.lock().await;
+        graph.initialize(chain_tokens);
     }
 
     let mut tasks = vec![];
 
-    for stream_builder in stream_builders {
+    for (stream_builder, _chain) in stream_builders {
+        let arbitrage_graph = Arc::clone(&arbitrage_graph);
         let task = tokio::spawn(async move {
             let mut stream = stream_builder
                 .build()
                 .await
                 .expect("Failed building protocol stream");
 
+            // TODO: find out how to get initial state through simulation package or retrieve from tycho API
+
             while let Some(message_result) = stream.next().await {
-                let message = match message_result {
+                match message_result {
                     Ok(msg) => {
-                        tracing::info!("Received message: {:?}", msg);
-                        msg
+                        // tracing::info!("Received message: {:?}", msg);
+                        let mut graph = arbitrage_graph.lock().await;
+                        graph.handle_block_update(msg);
                     }
                     Err(e) => {
                         tracing::error!(

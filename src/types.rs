@@ -1,4 +1,8 @@
 use serde::{Deserialize, Serialize};
+use tycho_common::models::Chain;
+use tycho_simulation::{models::Token, protocol::state::ProtocolSim};
+use petgraph::graph::DiGraph;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct TokenConfig {
@@ -31,7 +35,7 @@ pub struct Network {
     pub block_time_ms: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize, Deserialize)]
 pub enum Protocol {
     UniswapV2,
     UniswapV3,
@@ -73,4 +77,27 @@ impl Protocol {
             Protocol::EkuboV2 => "ekubo_v2",
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct TokenNode {
+  pub symbol: String,
+  pub tokens: HashMap<Chain, Token>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PriceEdge {
+    pub chain: Chain,
+    pub protocol: Protocol,
+    pub pool_address: String,
+    pub state: Box<dyn ProtocolSim>,
+    pub to_token: Token,
+    pub from_token: Token,
+    pub price: f64,
+}
+  
+
+#[derive(Debug, Clone)]
+pub struct ArbitrageGraph {
+    pub graph: DiGraph<TokenNode, PriceEdge>,
 }

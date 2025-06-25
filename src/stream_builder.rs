@@ -1,3 +1,5 @@
+use crate::types::{Network, Protocol};
+use std::collections::HashMap;
 use tycho_client::feed::component_tracker::ComponentFilter;
 use tycho_simulation::evm::{
     engine_db::tycho_db::PreCachedDB,
@@ -12,12 +14,8 @@ use tycho_simulation::evm::{
     stream::ProtocolStreamBuilder,
     tycho_models::Chain,
 };
-
-use std::collections::HashMap;
 use tycho_simulation::models::Token;
 use tycho_simulation::tycho_core::Bytes;
-
-use crate::types::{Network, Protocol};
 
 pub async fn create_protocol_stream_builder(
     network: Network,
@@ -27,7 +25,7 @@ pub async fn create_protocol_stream_builder(
     tokens: HashMap<Bytes, Token>,
 ) -> ProtocolStreamBuilder {
     tracing::info!(
-        "Creating protocol stream builder for network {}",
+        "Creating protocol stream builder for chain {}",
         network.name
     );
 
