@@ -52,7 +52,7 @@ async fn main() {
 
         let stream_builder = create_protocol_stream_builder(
             network,
-            chain,
+            config.rpc_url.clone(),
             tvl_filter.clone(),
             TYCHO_API_KEY.to_string(),
             tokens,

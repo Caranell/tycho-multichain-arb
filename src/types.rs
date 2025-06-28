@@ -20,12 +20,14 @@ pub struct ChainConfig {
 pub struct Config {
     pub private_key: String,
     pub risk_param: u64,
+    pub rpc_url: String,
     pub chains: Vec<ChainConfig>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Network {
     pub name: String,
+    pub chain: Chain,
     pub chainid: u64,
     pub rpc: String,
     pub explorer: String,

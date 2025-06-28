@@ -1,6 +1,7 @@
 use crate::types::Config;
 use serde_yaml;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::str::FromStr;
 use tycho_common::models::Chain;
 
@@ -32,6 +33,15 @@ fn validate_config(config: &Config) -> Result<(), String> {
         if Chain::from_str(&chain_config.name).is_err() {
             return Err(format!("Unknown chain name: {}", chain_config.name).into());
         }
+    }
+
+    if !config.rpc_url.is_empty() {
+        let rpc_url = config.rpc_url.clone();
+        unsafe {
+            env::set_var("RPC_URL", rpc_url);
+        }
+    } else {
+        tracing::warn!("No RPC URL provided, some exchanges may not be available");
     }
 
     let mut token_locations: HashMap<String, HashSet<String>> = HashMap::new();

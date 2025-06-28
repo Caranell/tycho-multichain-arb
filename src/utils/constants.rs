@@ -1,4 +1,5 @@
 use crate::types::Network;
+use tycho_common::models::Chain;
 
 pub const TYCHO_API_KEY: &str = "sampletoken";
 pub const TVL_LOWER_BOUND: f64 = 50.;
@@ -13,6 +14,7 @@ pub fn networks() -> Vec<Network> {
         Network {
             chainid: 1,
             name: "ethereum".to_string(),
+            chain: Chain::Ethereum,
             rpc: "https://ethereum-rpc.publicnode.com".to_string(),
             explorer: "https://etherscan.io/".to_string(),
             tycho_url: "tycho-beta.propellerheads.xyz".to_string(),
@@ -23,6 +25,7 @@ pub fn networks() -> Vec<Network> {
         Network {
             chainid: 8453,
             name: "base".to_string(),
+            chain: Chain::Base,
             rpc: "https://base.llamarpc.com".to_string(),
             explorer: "https://basescan.io/".to_string(),
             tycho_url: "tycho-base-beta.propellerheads.xyz".to_string(),
@@ -33,6 +36,7 @@ pub fn networks() -> Vec<Network> {
         Network {
             chainid: 130,
             name: "unichain".to_string(),
+            chain: Chain::Unichain,
             rpc: "https://unichain.drpc.org".to_string(),
             explorer: "https://uniscan.xyz/".to_string(),
             tycho_url: "tycho-unichain-beta.propellerheads.xyz".to_string(),

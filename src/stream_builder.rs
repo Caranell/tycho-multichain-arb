@@ -1,6 +1,6 @@
 use crate::types::{Network, Protocol};
 use std::collections::HashMap;
-use tycho_client::feed::component_tracker::ComponentFilter;
+use tycho_client::{feed::component_tracker::ComponentFilter, rpc};
 use tycho_simulation::evm::{
     engine_db::tycho_db::PreCachedDB,
     protocol::{
@@ -19,7 +19,7 @@ use tycho_simulation::tycho_core::Bytes;
 
 pub async fn create_protocol_stream_builder(
     network: Network,
-    chain: Chain,
+    rpc_url: String,
     tvl_filter: ComponentFilter,
     api_key: String,
     tokens: HashMap<Bytes, Token>,
@@ -29,8 +29,8 @@ pub async fn create_protocol_stream_builder(
         network.name
     );
 
-    let mut builder = ProtocolStreamBuilder::new(network.tycho_url.as_str(), chain);
-    builder = add_exchanges(builder, &chain, tvl_filter);
+    let mut builder = ProtocolStreamBuilder::new(network.tycho_url.as_str(), network.chain);
+    builder = add_exchanges(builder, &network.chain, tvl_filter, rpc_url);
     builder = setup_stream_builder(builder, api_key, tokens).await;
 
     builder
@@ -40,6 +40,7 @@ pub fn add_exchanges(
     mut builder: ProtocolStreamBuilder,
     chain: &Chain,
     tvl_filter: ComponentFilter,
+    rpc_url: String,
 ) -> ProtocolStreamBuilder {
     match chain {
         Chain::Ethereum => {
@@ -66,17 +67,21 @@ pub fn add_exchanges(
                     Protocol::PancakeswapV3.to_str(),
                     tvl_filter.clone(),
                     None,
-                )
-                .exchange::<EVMPoolState<PreCachedDB>>(
-                    Protocol::VmBalancerV2.to_str(),
-                    tvl_filter.clone(),
-                    Some(balancer_pool_filter),
-                )
-                .exchange::<EVMPoolState<PreCachedDB>>(
-                    Protocol::VmCurve.to_str(),
-                    tvl_filter.clone(),
-                    Some(curve_pool_filter),
-                )
+                );
+
+            if !rpc_url.is_empty() {
+                builder = builder
+                    .exchange::<EVMPoolState<PreCachedDB>>(
+                        Protocol::VmBalancerV2.to_str(),
+                        tvl_filter.clone(),
+                        Some(balancer_pool_filter),
+                    )
+                    .exchange::<EVMPoolState<PreCachedDB>>(
+                        Protocol::VmCurve.to_str(),
+                        tvl_filter.clone(),
+                        Some(curve_pool_filter),
+                    )
+            }
         }
         Chain::Base => {
             builder = builder
