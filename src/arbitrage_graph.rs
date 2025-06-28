@@ -58,7 +58,7 @@ impl ArbitrageGraph {
 
     pub fn format_edges(&self) {
         // Collect edge information (from_symbol, to_symbol, chain, protocol, price)
-        let mut edges_info: Vec<(String, String, Chain, Protocol, f64)> = self
+        let mut edges_info: Vec<(String, String, Chain, Protocol, f64, String)> = self
             .graph
             .edge_references()
             .map(|edge_ref| {
@@ -69,6 +69,7 @@ impl ArbitrageGraph {
                     edge.chain,
                     edge.protocol,
                     edge.price,
+                    edge.pool_address.clone(),
                 )
             })
             .collect();
@@ -80,13 +81,14 @@ impl ArbitrageGraph {
         });
 
         // Print formatted edges
-        for (from_symbol, to_symbol, chain, protocol, price) in edges_info {
+        for (from_symbol, to_symbol, chain, protocol, price, pool_address) in edges_info {
             println!(
-                "{} -> {} | Chain: {:?} | Protocol: {} | Price: {:.6}",
+                "{} -> {} | Chain: {:?} | Protocol: {} | Pool: {} | Price: {:.6}",
                 from_symbol,
                 to_symbol,
                 chain,
                 protocol.to_str(),
+                pool_address,
                 price
             );
         }
@@ -139,9 +141,14 @@ impl ArbitrageGraph {
             .map(|e| e.id())
             .collect();
 
+        println!("UPDATING EDGES: {:?}", edge_indices.len());
+        let start = std::time::Instant::now();
+        // TODO: ONLY UPDATE THE EDGES THAT ARE AFFECTED BY THE STATE UPDATE
         for idx in edge_indices {
             self.update_edge_weight(idx, state.clone());
         }
+        let duration = start.elapsed();
+        println!("Time taken: {:?}", duration);
     }
 
     pub fn update_edge_weight(&mut self, idx: EdgeIndex, state: Box<dyn ProtocolSim>) {
