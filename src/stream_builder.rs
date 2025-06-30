@@ -1,6 +1,6 @@
 use crate::types::{Network, Protocol};
 use std::collections::HashMap;
-use tycho_client::{feed::component_tracker::ComponentFilter, rpc};
+use tycho_client::feed::component_tracker::ComponentFilter;
 use tycho_simulation::evm::{
     engine_db::tycho_db::PreCachedDB,
     protocol::{

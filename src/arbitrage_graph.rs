@@ -15,6 +15,7 @@ impl ArbitrageGraph {
         }
     }
 
+    // TODO: decide if we need to call component (edge) synchronization
     pub fn initialize(&mut self, chain_tokens: HashMap<Chain, HashMap<Bytes, Token>>) {
         let mut symbol_to_tokens: HashMap<String, HashMap<Chain, Token>> = HashMap::new();
 
@@ -95,14 +96,8 @@ impl ArbitrageGraph {
     }
 
     pub fn handle_new_pair(&mut self, pair: ProtocolComponent, state: Box<dyn ProtocolSim>) {
-        let from_node = self
-            .graph
-            .node_indices()
-            .find(|&i| self.graph.node_weight(i).unwrap().symbol == pair.tokens[0].symbol);
-        let to_node = self
-            .graph
-            .node_indices()
-            .find(|&i| self.graph.node_weight(i).unwrap().symbol == pair.tokens[1].symbol);
+        let from_node = self.find_node_by_symbol(pair.tokens[0].symbol.clone());
+        let to_node = self.find_node_by_symbol(pair.tokens[1].symbol.clone());
 
         self.add_edge(
             PriceEdge {
@@ -141,14 +136,9 @@ impl ArbitrageGraph {
             .map(|e| e.id())
             .collect();
 
-        println!("UPDATING EDGES: {:?}", edge_indices.len());
-        let start = std::time::Instant::now();
-        // TODO: ONLY UPDATE THE EDGES THAT ARE AFFECTED BY THE STATE UPDATE
         for idx in edge_indices {
             self.update_edge_weight(idx, state.clone());
         }
-        let duration = start.elapsed();
-        println!("Time taken: {:?}", duration);
     }
 
     pub fn update_edge_weight(&mut self, idx: EdgeIndex, state: Box<dyn ProtocolSim>) {
@@ -160,5 +150,11 @@ impl ArbitrageGraph {
         edge_weight.state = state;
 
         self.update_edge(idx, edge_weight);
+    }
+
+    fn find_node_by_symbol(&self, symbol: String) -> Option<NodeIndex> {
+        self.graph
+            .node_indices()
+            .find(|&i| self.graph.node_weight(i).unwrap().symbol == symbol)
     }
 }

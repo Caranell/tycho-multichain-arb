@@ -78,12 +78,9 @@ async fn main() {
                 .await
                 .expect("Failed building protocol stream");
 
-            // TODO: find out how to get initial state through simulation package or retrieve from tycho API
-
             while let Some(message_result) = stream.next().await {
                 match message_result {
                     Ok(msg) => {
-                        // tracing::info!("Received message: {:?}", msg);
                         let mut graph = arbitrage_graph.lock().await;
                         graph.handle_block_update(msg);
                     }
