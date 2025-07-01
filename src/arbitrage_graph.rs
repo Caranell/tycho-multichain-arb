@@ -4,7 +4,7 @@ use petgraph::graph::DiGraph;
 use petgraph::prelude::{EdgeIndex, NodeIndex};
 use petgraph::visit::EdgeRef;
 use std::collections::HashMap;
-use tycho_common::{Bytes, models::Chain};
+use tycho_common::{models::Chain, Bytes};
 use tycho_simulation::protocol::models::{BlockUpdate, ProtocolComponent};
 use tycho_simulation::{models::Token, protocol::state::ProtocolSim};
 
@@ -12,6 +12,8 @@ impl ArbitrageGraph {
     pub fn new() -> Self {
         Self {
             graph: DiGraph::new(),
+            edges_map: HashMap::new(),
+            nodes_map: HashMap::new(),
         }
     }
 
@@ -29,15 +31,17 @@ impl ArbitrageGraph {
         }
 
         for (symbol, tokens_map) in symbol_to_tokens {
-            self.graph.add_node(TokenNode {
-                symbol,
+            let node_index = self.graph.add_node(TokenNode {
+                symbol: symbol.clone(),
                 tokens: tokens_map,
             });
+            self.nodes_map.insert(symbol, node_index);
         }
     }
 
-    pub fn add_edge(&mut self, edge: PriceEdge, from: NodeIndex, to: NodeIndex) {
-        self.graph.add_edge(from, to, edge);
+    pub fn add_edge(&mut self, edge: PriceEdge, from: NodeIndex, to: NodeIndex) -> EdgeIndex {
+        let edge_index = self.graph.add_edge(from, to, edge);
+        edge_index
     }
 
     pub fn update_edge(&mut self, index: EdgeIndex, edge: PriceEdge) {
@@ -96,10 +100,10 @@ impl ArbitrageGraph {
     }
 
     pub fn handle_new_pair(&mut self, pair: ProtocolComponent, state: Box<dyn ProtocolSim>) {
-        let from_node = self.find_node_by_symbol(pair.tokens[0].symbol.clone());
-        let to_node = self.find_node_by_symbol(pair.tokens[1].symbol.clone());
+        let from_node = self.nodes_map.get(&pair.tokens[0].symbol.clone()).unwrap().clone();
+        let to_node = self.nodes_map.get(&pair.tokens[1].symbol.clone()).unwrap().clone();
 
-        self.add_edge(
+        let edge_index_first = self.add_edge(
             PriceEdge {
                 chain: pair.chain,
                 protocol: Protocol::from_str(&pair.protocol_system).unwrap(),
@@ -109,11 +113,11 @@ impl ArbitrageGraph {
                 to_token: pair.tokens[0].clone(),
                 from_token: pair.tokens[1].clone(),
             },
-            from_node.unwrap(),
-            to_node.unwrap(),
+            from_node,
+            to_node,
         );
 
-        self.add_edge(
+        let edge_index_second = self.add_edge(
             PriceEdge {
                 chain: pair.chain,
                 protocol: Protocol::from_str(&pair.protocol_system).unwrap(),
@@ -123,21 +127,19 @@ impl ArbitrageGraph {
                 to_token: pair.tokens[1].clone(),
                 from_token: pair.tokens[0].clone(),
             },
-            to_node.unwrap(),
-            from_node.unwrap(),
+            to_node,
+            from_node,
         );
+
+        self.edges_map.insert(pair.id.to_string(), vec![edge_index_first, edge_index_second]);
     }
 
     pub fn handle_state_update(&mut self, state: Box<dyn ProtocolSim>, address: String) {
-        let edge_indices: Vec<EdgeIndex> = self
-            .graph
-            .edge_references()
-            .filter(|e| e.weight().pool_address == address)
-            .map(|e| e.id())
-            .collect();
-
-        for idx in edge_indices {
-            self.update_edge_weight(idx, state.clone());
+        if let Some(edge_indices) = self.edges_map.get(&address) {
+            let indices = edge_indices.clone();
+            for idx in indices {
+                self.update_edge_weight(idx, state.clone());
+            }
         }
     }
 
@@ -150,11 +152,5 @@ impl ArbitrageGraph {
         edge_weight.state = state;
 
         self.update_edge(idx, edge_weight);
-    }
-
-    fn find_node_by_symbol(&self, symbol: String) -> Option<NodeIndex> {
-        self.graph
-            .node_indices()
-            .find(|&i| self.graph.node_weight(i).unwrap().symbol == symbol)
     }
 }

@@ -3,6 +3,7 @@ use tycho_common::models::Chain;
 use tycho_simulation::{models::Token, protocol::state::ProtocolSim};
 use petgraph::graph::DiGraph;
 use std::collections::HashMap;
+use petgraph::prelude::{EdgeIndex, NodeIndex};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct TokenConfig {
@@ -97,9 +98,13 @@ pub struct PriceEdge {
     pub from_token: Token,
     pub price: f64,
 }
-  
+
+pub type Symbol = String;
+pub type PoolAddress = String;
 
 #[derive(Debug, Clone)]
 pub struct ArbitrageGraph {
     pub graph: DiGraph<TokenNode, PriceEdge>,
+    pub edges_map: HashMap<PoolAddress, Vec<EdgeIndex>>,
+    pub nodes_map: HashMap<Symbol, NodeIndex>,
 }
