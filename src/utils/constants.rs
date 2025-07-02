@@ -2,8 +2,8 @@ use crate::types::Network;
 use tycho_common::models::Chain;
 
 pub const TYCHO_API_KEY: &str = "sampletoken";
-pub const TVL_LOWER_BOUND: f64 = 50.;
-pub const TVL_UPPER_BOUND: f64 = 80.0;
+pub const TVL_LOWER_BOUND: f64 = 20.;
+pub const TVL_UPPER_BOUND: f64 = 40.0;
 
 pub fn network(name: String) -> Option<Network> {
     networks().into_iter().find(|n| n.name == name)

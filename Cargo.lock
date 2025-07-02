@@ -2530,9 +2530,9 @@ dependencies = [
 
 [[package]]
 name = "evm_ekubo_sdk"
-version = "0.4.4"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea508be2fca38161c011c360afd34e9a6df2579273cd77b8e51aba11f35f59db"
+checksum = "3718a9dd4f14da3c485e7aa4c8e9c856b4bb98d9a18059636f3315d70f2c7c1f"
 dependencies = [
  "insta",
  "num-traits",
@@ -7442,8 +7442,8 @@ dependencies = [
 
 [[package]]
 name = "tycho-simulation"
-version = "0.116.0"
-source = "git+https://github.com/propeller-heads/tycho-simulation.git?rev=9cd12329a1d5f5f745f932bf81d06ed15562ab38#9cd12329a1d5f5f745f932bf81d06ed15562ab38"
+version = "0.119.0"
+source = "git+https://github.com/propeller-heads/tycho-simulation.git#94a319b53de1a7be67fd9cf5b26722fc0174775a"
 dependencies = [
  "alloy",
  "chrono",

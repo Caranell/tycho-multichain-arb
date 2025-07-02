@@ -70,7 +70,7 @@ async fn main() {
 
     let mut tasks = vec![];
 
-    for (stream_builder, _chain) in stream_builders {
+    for (stream_builder, chain) in stream_builders {
         let arbitrage_graph = Arc::clone(&arbitrage_graph);
         let task = tokio::spawn(async move {
             let mut stream = stream_builder
@@ -82,7 +82,7 @@ async fn main() {
                 match message_result {
                     Ok(msg) => {
                         let mut graph = arbitrage_graph.lock().await;
-                        graph.handle_block_update(msg);
+                        graph.handle_block_update(msg, chain);
                     }
                     Err(e) => {
                         tracing::error!(

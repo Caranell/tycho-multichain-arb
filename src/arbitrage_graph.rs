@@ -1,6 +1,7 @@
 use crate::types::{ArbitrageGraph, PriceEdge, Protocol, TokenNode};
 use crate::utils::graph::GraphIndexUpdateTrait;
 use petgraph::graph::DiGraph;
+use petgraph::Direction::{Incoming, Outgoing};
 use petgraph::prelude::{EdgeIndex, NodeIndex};
 use petgraph::visit::EdgeRef;
 use std::collections::HashMap;
@@ -48,7 +49,7 @@ impl ArbitrageGraph {
         self.graph.update_edge_by_index(index, edge);
     }
 
-    pub fn handle_block_update(&mut self, msg: BlockUpdate) {
+    pub fn handle_block_update(&mut self, msg: BlockUpdate, _chain: Chain) {
         for (_, pair) in msg.new_pairs {
             let state = msg.states.get(&pair.id.to_string()).unwrap().clone();
             self.handle_new_pair(pair, state);
@@ -58,44 +59,31 @@ impl ArbitrageGraph {
             self.handle_state_update(state, address);
         }
 
-        self.format_edges();
+        self.format_pairs();
     }
 
-    pub fn format_edges(&self) {
-        // Collect edge information (from_symbol, to_symbol, chain, protocol, price)
-        let mut edges_info: Vec<(String, String, Chain, Protocol, f64, String)> = self
-            .graph
-            .edge_references()
-            .map(|edge_ref| {
-                let edge = edge_ref.weight();
-                (
-                    edge.from_token.symbol.clone(),
-                    edge.to_token.symbol.clone(),
-                    edge.chain,
-                    edge.protocol,
-                    edge.price,
-                    edge.pool_address.clone(),
-                )
-            })
-            .collect();
+    pub fn format_pairs(&self) {
+        let node_indices = self.graph.node_indices().collect::<Vec<_>>();
 
-        // Sort first by `from` token symbol, then by `to` token symbol
-        edges_info.sort_by(|a, b| match a.0.cmp(&b.0) {
-            std::cmp::Ordering::Equal => a.1.cmp(&b.1),
-            other => other,
-        });
+        for node_index in node_indices {
+            let node_symbol = self.graph.node_weight(node_index).unwrap().symbol.clone();
+            let node_edges = self.graph.edges_directed(node_index, Incoming).collect::<Vec<_>>();
 
-        // Print formatted edges
-        for (from_symbol, to_symbol, chain, protocol, price, pool_address) in edges_info {
-            println!(
-                "{} -> {} | Chain: {:?} | Protocol: {} | Pool: {} | Price: {:.6}",
-                from_symbol,
-                to_symbol,
-                chain,
-                protocol.to_str(),
-                pool_address,
-                price
-            );
+            println!("{}", node_symbol);
+
+            for edge in node_edges {
+                let edge_weight = edge.weight().clone();
+
+                println!(
+                    "{} -> {} | Chain: {:?} | Protocol: {} | Pool: {} | Price: {:.6}",
+                    edge_weight.from_token.symbol,
+                    edge_weight.to_token.symbol,
+                    edge_weight.chain,
+                    edge_weight.protocol.to_str(),
+                    edge_weight.pool_address,
+                    edge_weight.price
+                );
+            }
         }
     }
 
